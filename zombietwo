@@ -1,30 +1,29 @@
 from pygame import *
 from random import randint
 from time import time as timer
- 
-score = 0 
-lost = 0 
+
+score = 0
+lost = 0
 life = 3
 
 font.init()
-font2 = font.Font(None,52)
-win = font2.render("You win, all zombies died!!!:)",True,(255,255,255))
-lose = font2.render("You lose, zombies kill you ;(",True,(171,33,33))
-
+font2 = font.Font(None, 52)
+win = font2.render("You win, all zombies died!!!:)", True, (255, 255, 255))
+lose = font2.render("You lose, zombies kill you ;(", True, (171, 33, 33))
 
 win_width = 900
 win_height = 700
 display.set_caption("Zombie")
-window = display.set_mode((win_width,win_height))
-background  = transform.scale(image.load("backgroundroad.jpg"),(win_width,win_height))
+window = display.set_mode((win_width, win_height))
+background = transform.scale(image.load("backgroundroad.jpg"), (win_width, win_height))
 
 
 class GamaSprite(sprite.Sprite):
 
-    def __init__(self, player_image,player_x,player_y, size_x,size_y, player_speed):
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed):
         sprite.Sprite.__init__(self)
 
-        self.image = transform.scale(image.load(player_image),(size_x,size_y))
+        self.image = transform.scale(image.load(player_image), (size_x, size_y))
         self.speed = player_speed
 
         self.rect = self.image.get_rect()
@@ -32,63 +31,103 @@ class GamaSprite(sprite.Sprite):
         self.rect.y = player_y
 
     def reset(self):
-        window.blit(self.image, (self.rect.x,self.rect.y))
+        window.blit(self.image, (self.rect.x, self.rect.y))
+
 
 left = False
-right = True
+
 
 class Player(GamaSprite):
     def update(self):
         global left
         global right
         keys = key.get_pressed()
-        if keys[K_UP] and self.rect.y > 5:
-            self.rect.y += self.speed 
 
-        if keys[K_DOWN] and self.rect.y < win_width -80:
-            self.rect.y -= self.speed 
+        if keys[K_UP] and self.rect.y > 5:
+            self.rect.y += self.speed
+
+        if keys[K_DOWN] and self.rect.y < win_width - 80:
+            self.rect.y -= self.speed
 
         if keys[K_LEFT] and self.rect.x > 5:
             self.rect.x -= self.speed
             if not left:
                 self.image = transform.flip(self.image, True, False)
                 left = True
-                right = False
 
         if keys[K_RIGHT] and self.rect.x < win_width - 80:
-            if not right:
+            if left:
                 self.image = transform.flip(self.image, True, False)
-                right = True
+
                 left = False
             self.rect.x += self.speed
 
     def fire(self):
-        bullet = Bullet("bulletforzombie.png",self.rect.centerx,self.rect.top, 15, 25, 10)
+        global left
+        if left:
+            bullet = Bullet("bulletforzombie.png", self.rect.centerx, self.rect.top, 15, 25, 10, True)
+        else:
+            bullet = Bullet("bulletforzombie.png", self.rect.centerx, self.rect.top, 15, 25, 10, False)
         bullets.add(bullet)
 
-class Enemy(GamaSprite):
-    def update(self):
-        self.rect.y += self.speed
-        global lost
 
-        if  self.rect.y > win_height:
-            self.rect.x = randint(80,win_width -80)
-            self.rect.y = 0
-            lost = lost + 1
+class Enemy(GamaSprite):
+
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed, left = False):
+        GamaSprite.__init__(self, player_image, player_x, player_y, size_x, size_y, player_speed)
+        self.left = left
+        if left:
+            self.image = transform.flip(self.image, True, False)
+
+
+    def update(self):
+        global lost
+        if self.left:
+            self.rect.x += self.speed
+            if self.rect.x > win_width+80:
+                self.rect.x = -80
+
+                lost = lost + 1
+        else:
+            self.rect.x -= self.speed
+            if self.rect.x < -80:
+                self.rect.x = win_width + 80
+
+                lost = lost + 1
+
+
+
+
 
 class Bullet(GamaSprite):
-    def update(self):
-        self.rect.x +=self.speed
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed, left=False):
+        GamaSprite.__init__(self, player_image, player_x, player_y, size_x, size_y, player_speed)
+        self.left = left
+        if left:
+            self.image = transform.flip(self.image, True, False)
 
+    def update(self):
+
+        if self.left:
+            self.rect.x -= self.speed
+        else:
+            self.rect.x += self.speed
         if self.rect.x < 0:
             self.kill()
 
 
-jack = Player("jack.png", 5 , win_height-250,100,150,10)
+jack = Player("jack.png", 250, win_height - 250, 90, 150, 10)
 
 zombies = sprite.Group()
 for i in range(5):
-    zombie = Enemy("zombies.png", randint(80,win_width -80), 40,80 ,90 ,randint(1,5))
+    a = randint(0,1)
+    print(a )
+
+    if a == 0:
+        zombie = Enemy("zombies.png",  -80, win_height -200 , 80, 90, randint(1, 5), True)
+    else:
+        zombie = Enemy("zombies.png", win_width + 80, win_height -200, 80 , 90, randint(1, 5), False)
+
     zombies.add(zombie)
 
 bullets = sprite.Group()
@@ -100,7 +139,6 @@ num_fire = 0
 
 clock = time.Clock()
 while run:
-     
 
     for e in event.get():
         if e.type == QUIT:
@@ -109,24 +147,23 @@ while run:
         elif e.type == KEYDOWN:
             if e.key == K_SPACE:
 
-                if num_fire <  12 and rel_time == False:
+                if num_fire < 12 and rel_time == False:
                     num_fire += 1
                     jack.fire()
-                    #fire_sound.play() 
-                
-                if num_fire >=12 and rel_time==False:
+                    # fire_sound.play()
+
+                if num_fire >= 12 and rel_time == False:
                     last_time = timer()
                     rel_time = True
 
-
     if not finish:
-        window.blit(background,(0,0))
+        window.blit(background, (0, 0))
 
-        text = font2.render("Killed: " + str(score),1,(0,255,255))
-        window.blit(text,(10,20))
+        text = font2.render("Killed: " + str(score), 1, (0, 255, 255))
+        window.blit(text, (10, 20))
 
-        text_lose = font2.render("Missed: " + str(lost),1,(0,255,255))
-        window.blit(text_lose,(10,50))
+        text_lose = font2.render("Missed: " + str(lost), 1, (0, 255, 255))
+        window.blit(text_lose, (10, 50))
         jack.update()
         zombies.update()
         bullets.update()
@@ -135,56 +172,53 @@ while run:
         zombies.draw(window)
         bullets.draw(window)
 
-
-
         if rel_time == True:
             now_timer = timer()
 
             if now_timer - last_time < 3:
-                relead = font2.render("AAA, RELOAD...",1,(150,0,0))
-                window.blit(relead,(300, 500))
+                relead = font2.render("AAA, RELOAD...", 1, (150, 0, 0))
+                window.blit(relead, (300, 500))
             else:
                 num_fire = 0
                 rel_time = False
-            
-            
 
-        colleds = sprite.groupcollide(zombies,bullets, True,True)
+        colleds = sprite.groupcollide(zombies, bullets, True, True)
 
         for c in colleds:
             score += 1
-            zombie = Enemy("zombies.png", randint(80,win_width-80), -40,80 ,50 ,randint(1,5))
+            a = randint(0, 1)
+            print(a)
+
+            if a == 0:
+                zombie = Enemy("zombies.png", -80, win_height - 150, 80, 90, randint(1, 5), True)
+            else:
+                zombie = Enemy("zombies.png", win_width + 80, win_height - 150, 80, 90, randint(1, 5), False)
             zombies.add(zombie)
 
         if sprite.spritecollide(jack, zombies, False):
-            sprite.spritecollide(jack, zombies,True)
+            sprite.spritecollide(jack, zombies, True)
             life -= 1
-
 
         if score >= 15:
             finish = True
-            window.blit(win,(win_width/2-100,win_height/2))
+            window.blit(win, (win_width / 2 - 100, win_height / 2))
 
-   
-
-        if lost >= 3  or life == 0:
+        if lost >= 3 or life == 0:
             finish = True
-            window.blit(lose,(win_width/2-100,win_height/2))
-
+            window.blit(lose, (win_width / 2 - 100, win_height / 2))
 
         if life == 3:
-            life_color = (144,3,3)
+            life_color = (144, 3, 3)
         elif life == 2:
-            life_color = (150,150,0)
+            life_color = (150, 150, 0)
         elif life == 1:
-            life_color == (144,3,3  )
+            life_color == (144, 3, 3)
         else:
-            life_color = (255,255,255)
+            life_color = (255, 255, 255)
 
-        text_life = font2.render(str(life),1,life_color)
-        window.blit(text_life,(650,10))
+        text_life = font2.render(str(life), 1, life_color)
+        window.blit(text_life, (650, 10))
 
         display.update()
-    
 
     clock.tick(40)
