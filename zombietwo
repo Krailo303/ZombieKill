@@ -65,9 +65,9 @@ class Player(GamaSprite):
     def fire(self):
         global left
         if left:
-            bullet = Bullet("bulletforzombie.png", self.rect.centerx, self.rect.top, 15, 25, 10, True)
+            bullet = Bullet("magicbullet.png", self.rect.centerx, self.rect.top, 10, 25, 30, True)
         else:
-            bullet = Bullet("bulletforzombie.png", self.rect.centerx, self.rect.top, 15, 25, 10, False)
+            bullet = Bullet("magicbullet.png", self.rect.centerx, self.rect.top, 10, 25, 30, False)
         bullets.add(bullet)
 
 
